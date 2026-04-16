@@ -90,30 +90,49 @@ def formatear_fecha_ar(fecha_str):
 
 # --- MOTORES DE BÚSQUEDA ---
 
-def obtener_noticias(query, dias_atras, cantidad=3, idioma='es'):
+# --- MOTORES DE BÚSQUEDA REFINADOS ---
+
+def obtener_noticias(query, dias_atras, dominios, cantidad=3, idioma='es'):
     try:
         api_key = st.secrets["NEWS_API_KEY"]
         fecha_limite = (datetime.now() - timedelta(days=dias_atras)).strftime('%Y-%m-%d')
-        url = f"https://newsapi.org/v2/everything?q={query}&from={fecha_limite}&language={idioma}&sortBy=publishedAt&pageSize={cantidad}&apiKey={api_key}"
+        # Filtramos por dominios específicos para asegurar calidad
+        url = f"https://newsapi.org/v2/everything?q={query}&from={fecha_limite}&domains={dominios}&language={idioma}&sortBy=relevancy&pageSize={cantidad}&apiKey={api_key}"
         response = requests.get(url)
         return response.json().get('articles', [])
     except: return []
 
-def obtener_papers(query, cantidad=3):
-    try:
-        url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={cantidad}&sortBy=submittedDate&sortOrder=descending"
-        root = ET.fromstring(requests.get(url).content)
-        papers = []
-        for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
-            fecha_raw = entry.find('{http://www.w3.org/2005/Atom}published').text
-            papers.append({
-                'title': entry.find('{http://www.w3.org/2005/Atom}title').text.strip(),
-                'summary': entry.find('{http://www.w3.org/2005/Atom}summary').text.strip(),
-                'url': entry.find('{http://www.w3.org/2005/Atom}id').text,
-                'date': formatear_fecha_ar(fecha_raw)
-            })
-        return papers
-    except: return []
+# --- RENDERIZADO CON FUENTES SELECTAS ---
+
+col_tech, col_arg = st.columns(2, gap="large")
+
+with col_tech:
+    st.header("Global Tech")
+    # Fuentes anglo de alta calidad técnica
+    fuentes_tech = "techcrunch.com,wired.com,arstechnica.com,theatlantic.com"
+    q_tech = "('artificial intelligence' OR 'machine learning' OR 'data science')"
+    for art in obtener_noticias(q_tech, dias_atras=30, dominios=fuentes_tech, idioma='en'):
+        fecha_ar = formatear_fecha_ar(art['publishedAt'])
+        st.markdown(f"""<div class="card">
+            <div class="metadata"><span class="source-tag">{art['source']['name']}</span>{fecha_ar}</div>
+            <h3>{art['title']}</h3>
+            <p>{art['description'][:150] if art['description'] else ''}...</p>
+            <a href="{art['url']}" target="_blank">Full Report →</a>
+        </div>""", unsafe_allow_html=True)
+
+with col_arg:
+    st.header("Actualidad Argentina")
+    # Fuentes nacionales estratégicas
+    fuentes_ar = "lanacion.com.ar,infobae.com,cronista.com,ambito.com"
+    q_arg = "(economía OR política OR macroeconomía)"
+    for art in obtener_noticias(q_arg, dias_atras=14, dominios=fuentes_ar, idioma='es'):
+        fecha_ar = formatear_fecha_ar(art['publishedAt'])
+        st.markdown(f"""<div class="card">
+            <div class="metadata"><span class="source-tag">{art['source']['name']}</span>{fecha_ar}</div>
+            <h3>{art['title']}</h3>
+            <p>{art['description'][:150] if art['description'] else ''}...</p>
+            <a href="{art['url']}" target="_blank">Leer más →</a>
+        </div>""", unsafe_allow_html=True)
 
 # --- RENDERIZADO ---
 
