@@ -1,108 +1,33 @@
-import streamlit as st
-import requests
-import xml.etree.ElementTree as ET
-import random
-from datetime import datetime
-
-# Configuración de página
-st.set_page_config(page_title="Nodo", layout="wide")
-
-# Estilo de Alto Contraste y Minimalismo
 st.markdown("""
     <style>
-    .stApp { background-color: #ffffff; color: #1a1a1a; }
-    h1 { font-size: 2.2rem; font-weight: 700; color: #000000 !important; letter-spacing: -0.02em; }
-    h2 { font-size: 1.1rem; font-weight: 600; color: #666666 !important; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2rem; border-bottom: 1px solid #eeeeee; padding-bottom: 0.5rem; }
-    h3 { font-size: 1.2rem; font-weight: 600; color: #1a1a1a !important; line-height: 1.3; margin-top: 1rem; }
-    .metadata { font-size: 0.75rem; color: #777777 !important; margin-bottom: 0.5rem; font-weight: 500; }
-    a { color: #0066cc !important; text-decoration: none; }
-    hr { border: 0; border-top: 1px solid #f0f0f0; margin: 1.5rem 0; }
-    .stButton>button { border-radius: 4px; border: 1px solid #cccccc; background: white; color: #333333; }
+    /* Fondo de la página ligeramente gris para que resalten las tarjetas */
+    .stApp { background-color: #f8f9fa; color: #1a1a1a; }
+    
+    /* Contenedor principal centrado y con ancho controlado */
+    .main .block-container { max-width: 900px; padding-top: 3rem; }
+
+    h1 { font-size: 2.8rem; font-weight: 800; color: #000; margin-bottom: 2rem; }
+    h2 { font-size: 1.1rem; font-weight: 700; color: #555 !important; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 3rem; margin-bottom: 1.5rem; }
+    
+    /* Tarjetas con relieve y bordes claros */
+    .card {
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid #e1e4e8;
+        margin-bottom: 1.5rem;
+        background-color: #ffffff; /* Blanco puro sobre fondo gris */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); /* Sombra casi imperceptible pero efectiva */
+    }
+    
+    h3 { font-size: 1.4rem; font-weight: 700; color: #1a1a1a !important; margin-bottom: 0.8rem; line-height: 1.25; }
+    .metadata { font-size: 0.8rem; color: #666 !important; margin-bottom: 1rem; font-family: monospace; }
+    .source-tag { color: #0066cc; font-weight: 700; text-transform: uppercase; }
+    
+    .stMarkdown p { font-size: 1.05rem; color: #333 !important; line-height: 1.6; }
+    
+    a { color: #0066cc !important; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+    a:hover { text-decoration: underline; }
+    
+    hr { border: 0; margin: 2rem 0; }
     </style>
     """, unsafe_allow_html=True)
-
-st.title("Nodo")
-st.markdown("<p style='color: #444;'>Digest estratégico: Global Tech, Argentina y Literatura Científica.</p>", unsafe_allow_html=True)
-
-# --- MOTORES DE BÚSQUEDA ---
-
-def obtener_noticias(query, cantidad=3, idioma='es'):
-    try:
-        api_key = st.secrets["NEWS_API_KEY"]
-        # Buscamos noticias más recientes y relevantes
-        url = f"https://newsapi.org/v2/everything?q={query}&language={idioma}&sortBy=relevancy&pageSize={cantidad}&apiKey={api_key}"
-        return requests.get(url).json().get('articles', [])
-    except: return []
-
-def obtener_papers(query, cantidad=3):
-    try:
-        url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={cantidad}&sortBy=submittedDate&sortOrder=descending"
-        root = ET.fromstring(requests.get(url).content)
-        papers = []
-        for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
-            fecha = datetime.fromisoformat(entry.find('{http://www.w3.org/2005/Atom}published').text.replace('Z', '+00:00'))
-            papers.append({
-                'title': entry.find('{http://www.w3.org/2005/Atom}title').text.strip(),
-                'summary': entry.find('{http://www.w3.org/2005/Atom}summary').text.strip(),
-                'url': entry.find('{http://www.w3.org/2005/Atom}id').text,
-                'date': fecha.strftime("%d.%m.%Y")
-            })
-        return papers
-    except: return []
-
-# --- RENDERIZADO ---
-
-col_tech, col_arg = st.columns(2)
-
-with col_tech:
-    st.header("Global Tech")
-    # Filtro estricto: Tech pura, excluyendo medicina y regiones no deseadas
-    q_tech = "('artificial intelligence' OR 'machine learning' OR 'data science') -health -medicine -nigeria"
-    noticias_tech = obtener_noticias(q_tech, idioma='en', cantidad=3)
-    for art in noticias_tech:
-        st.subheader(art['title'])
-        st.markdown(f"<div class='metadata'>{art['source']['name'].upper()} / {art['publishedAt'][:10]}</div>", unsafe_allow_html=True)
-        st.write(art['description'][:180] + "...")
-        st.markdown(f"[Source]({art['url']})")
-        st.write("---")
-
-with col_arg:
-    st.header("Argentina")
-    # Forzamos la ubicación para evitar ruido de otros países
-    q_arg = "(economía OR política OR sociedad) AND 'Argentina' -Chile -Uruguay"
-    noticias_arg = obtener_noticias(q_arg, idioma='es', cantidad=3)
-    for art in noticias_arg:
-        st.subheader(art['title'])
-        st.markdown(f"<div class='metadata'>{art['source']['name'].upper()} / {art['publishedAt'][:10]}</div>", unsafe_allow_html=True)
-        st.write(art['description'][:180] + "...")
-        st.markdown(f"[Leer artículo]({art['url']})")
-        st.write("---")
-
-# Sección 2: Literatura Científica (Tech + Ciencias Sociales)
-st.header("Literatura Científica")
-# Query que combina tus intereses en sistemas y comportamiento humano
-q_papers = "('complex systems' OR 'computational social science' OR 'behavioral economics')"
-papers = obtener_papers(q_papers, cantidad=3)
-for p in papers:
-    st.subheader(p['title'])
-    st.markdown(f"<div class='metadata'>ARXIV / {p['date']}</div>", unsafe_allow_html=True)
-    st.write(f"{p['summary'][:220]}...")
-    st.markdown(f"[Consultar fuente]({p['url']})")
-    st.write("---")
-
-# Sección 3: Exploración Aleatoria
-st.header("Exploración Aleatoria")
-temas_azar = ["urbanismo", "paleontología", "teoría de juegos", "biología marina", "historia antigua"]
-if 'tema_actual' not in st.session_state: st.session_state.tema_actual = random.choice(temas_azar)
-
-c1, c2 = st.columns([4, 1])
-with c1: st.write(f"Hoy: **{st.session_state.tema_actual.capitalize()}**")
-with c2:
-    if st.button("Cambiar"):
-        st.session_state.tema_actual = random.choice(temas_azar)
-        st.rerun()
-
-n_azar = obtener_noticias(st.session_state.tema_actual, cantidad=1, idioma='es')
-for n in n_azar:
-    st.subheader(n['title'])
-    st.markdown(f"[Explorar]({n['url']})")
