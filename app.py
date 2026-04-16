@@ -1,11 +1,12 @@
 import streamlit as st
 import requests
 import xml.etree.ElementTree as ET
+import random
 
 # Configuración de página
 st.set_page_config(page_title="Nodo", layout="wide")
 
-# Estilo minimalista mediante CSS
+# Estilo minimalista
 st.markdown("""
     <style>
     .reportview-container { background: #ffffff; }
@@ -18,11 +19,11 @@ st.title("Nodo")
 st.write("Digest personal de noticias y artículos.")
 st.write("---")
 
-# --- FUNCIONES DE OBTENCIÓN DE DATOS ---
+# --- FUNCIONES ---
 
-def obtener_noticias(query):
+def obtener_noticias(query, cantidad=5):
     api_key = st.secrets["NEWS_API_KEY"]
-    url = f"https://newsapi.org/v2/everything?q={query}&language=es&sortBy=relevancy&pageSize=5&apiKey={api_key}"
+    url = f"https://newsapi.org/v2/everything?q={query}&language=es&sortBy=relevancy&pageSize={cantidad}&apiKey={api_key}"
     response = requests.get(url)
     if response.status_code == 200:
         return response.json().get('articles', [])
@@ -43,33 +44,34 @@ def obtener_papers(query):
         return papers
     return []
 
-# --- RENDERIZADO DE SECCIONES ---
+# --- RENDERIZADO ---
 
-# Sección: Noticias
+# 1. Actualidad (Tus intereses)
 st.header("Actualidad")
-temas_noticias = "sistemas complejos OR 'análisis de datos' OR economía OR 'inteligencia artificial'"
-noticias = obtener_noticias(temas_noticias)
+temas_interes = "sistemas complejos OR 'análisis de datos' OR economía OR 'inteligencia artificial'"
+noticias = obtener_noticias(temas_interes)
+for art in noticias:
+    st.subheader(art['title'])
+    st.write(art['description'])
+    st.markdown(f"[Leer artículo]({art['url']})")
+    st.write("---")
 
-if noticias:
-    for art in noticias:
-        st.subheader(art['title'])
-        st.write(art['description'])
-        st.markdown(f"[Leer artículo]({art['url']})")
-        st.write("---")
-
-# Sección: Papers Académicos
+# 2. Literatura Científica (arXiv)
 st.header("Literatura Científica")
-# Buscamos en categorías generales (Broad) según lo acordado
-temas_papers = "complex systems OR data science OR economics"
-papers = obtener_papers(temas_papers)
+papers = obtener_papers("complex systems OR data science OR economics")
+for p in papers:
+    st.subheader(p['title'].replace('\n', ' '))
+    st.write(p['summary'][:300].replace('\n', ' ') + "...")
+    st.markdown(f"[Ver paper]({p['url']})")
+    st.write("---")
 
-if papers:
-    for p in papers:
-        st.subheader(p['title'].replace('\n', ' '))
-        # Recortamos el resumen para mantener el minimalismo
-        resumen = p['summary'][:300].replace('\n', ' ') + "..."
-        st.write(resumen)
-        st.markdown(f"[Ver paper]({p['url']})")
-        st.write("---")
-else:
-    st.write("No hay publicaciones académicas recientes.")
+# 3. Fuera de la burbuja (Azar)
+st.header("Fuera de la burbuja")
+temas_azar = ["astronomía", "arte renacentista", "biología marina", "urbanismo", "paleontología"]
+tema_elegido = random.choice(temas_azar)
+st.write(f"Explorando hoy: {tema_elegido}")
+noticias_azar = obtener_noticias(tema_elegido, cantidad=1)
+for n in noticias_azar:
+    st.subheader(n['title'])
+    st.write(n['description'])
+    st.markdown(f"[Explorar]({n['url']})")
