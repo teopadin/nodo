@@ -4,38 +4,37 @@ import xml.etree.ElementTree as ET
 import random
 from datetime import datetime
 
-# Configuración de página - Enfoque centrado para mejor lectura
+# Configuración de página
 st.set_page_config(page_title="Nodo", layout="centered")
 
-# Estilo Estrictamente Minimalista
+# Estilo de Alto Contraste para legibilidad
 st.markdown("""
     <style>
-    /* Fondo y fuente base */
-    .stApp { background-color: #ffffff; font-family: 'Inter', sans-serif; }
+    /* Forzar fondo blanco y texto oscuro */
+    .stApp { background-color: #ffffff; color: #1a1a1a; }
     
-    /* Títulos y secciones */
-    h1 { font-size: 2.2rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.02em; }
-    h2 { font-size: 1.2rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 0.5rem; }
-    h3 { font-size: 1.4rem; font-weight: 500; color: #1a1a1a; margin-bottom: 0.2rem; line-height: 1.3; }
+    /* Títulos nítidos */
+    h1 { font-size: 2.2rem; font-weight: 700; color: #000000 !important; letter-spacing: -0.02em; }
+    h2 { font-size: 1.1rem; font-weight: 600; color: #666666 !important; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3rem; border-bottom: 1px solid #eeeeee; padding-bottom: 0.5rem; }
+    h3 { font-size: 1.4rem; font-weight: 600; color: #1a1a1a !important; margin-bottom: 0.2rem; line-height: 1.3; }
     
-    /* Metadatos y texto */
-    .metadata { font-size: 0.8rem; color: #999; margin-bottom: 1rem; }
-    .stMarkdown p { font-size: 1.05rem; color: #444; line-height: 1.6; }
+    /* Cuerpo de texto legible */
+    .stMarkdown p { font-size: 1.05rem; color: #222222 !important; line-height: 1.6; }
+    .metadata { font-size: 0.8rem; color: #777777 !important; margin-bottom: 1rem; font-weight: 500; }
     
-    /* Botón minimalista */
-    .stButton>button { border-radius: 4px; border: 1px solid #e0e0e0; background: transparent; color: #666; padding: 0.4rem 1rem; transition: all 0.2s; }
-    .stButton>button:hover { border-color: #1a1a1a; color: #1a1a1a; }
+    /* Enlaces sobrios */
+    a { color: #0066cc !important; text-decoration: none; font-weight: 500; }
+    a:hover { text-decoration: underline; }
     
-    /* Separadores */
-    hr { border: 0; border-top: 1px solid #f8f8f8; margin: 2rem 0; }
+    /* Botón */
+    .stButton>button { border-radius: 4px; border: 1px solid #cccccc; background: white; color: #333333; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("Nodo")
-st.markdown("<p style='color: #666;'>Digest personal de información estratégica.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #444;'>Digest personal de información estratégica.</p>", unsafe_allow_html=True)
 
 # --- MOTORES DE BÚSQUEDA ---
-
 def obtener_noticias(query, cantidad=5):
     try:
         api_key = st.secrets["NEWS_API_KEY"]
@@ -59,9 +58,7 @@ def obtener_papers(query):
         return papers
     except: return []
 
-# --- CONTENIDO ---
-
-# 1. ACTUALIDAD
+# --- RENDERIZADO ---
 st.header("Actualidad")
 noticias = obtener_noticias("sistemas complejos OR 'análisis de datos' OR economía OR 'inteligencia artificial'")
 for art in noticias:
@@ -71,7 +68,6 @@ for art in noticias:
     st.markdown(f"[Leer artículo]({art['url']})")
     st.write("---")
 
-# 2. LITERATURA CIENTÍFICA
 st.header("Literatura Científica")
 papers = obtener_papers("complex systems OR data science OR economics")
 for p in papers:
@@ -81,18 +77,14 @@ for p in papers:
     st.markdown(f"[Consultar fuente]({p['url']})")
     st.write("---")
 
-# 3. FUERA DE LA BURBUJA
 st.header("Exploración Aleatoria")
 temas_azar = ["astronomía", "urbanismo", "paleontología", "teoría de juegos", "biología marina"]
-
-if 'tema_actual' not in st.session_state:
-    st.session_state.tema_actual = random.choice(temas_azar)
+if 'tema_actual' not in st.session_state: st.session_state.tema_actual = random.choice(temas_azar)
 
 col1, col2 = st.columns([3, 1])
-with col1:
-    st.write(f"Perspectiva de hoy: **{st.session_state.tema_actual.capitalize()}**")
+with col1: st.write(f"Perspectiva de hoy: **{st.session_state.tema_actual.capitalize()}**")
 with col2:
-    if st.button("Cambiar tema"):
+    if st.button("Cambiar"):
         st.session_state.tema_actual = random.choice(temas_azar)
         st.rerun()
 
